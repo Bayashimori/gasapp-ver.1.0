@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>燃料計算アプリ</title>
+</head>
+<body>
+    <h1 style="text-align: center;">燃料計算アプリ</h1>
+
+    <div style="text-align: center;">
+        <p>
+            走行距離（km）:<br>
+            <input type="number" id="distance" placeholder="例：500">
+        </p>
+        <p>
+            消費燃料（L）:<br>
+            <input type="number" id="fuel" placeholder="例：25">
+        </p>
+        <button onclick="calculate()" style="padding: 8px 16px;">燃費を計算</button>
+        <p id="result" style="margin-top: 20px; font-size: 18px;"></p>
+    </div>
+
+    <script>
+        function calculate() {
+            const distance = parseFloat(document.getElementById('distance').value);
+            const fuel = parseFloat(document.getElementById('fuel').value);
+            const resultArea = document.getElementById('result');
+
+            if (isNaN(distance) || isNaN(fuel) || fuel <= 0) {
+                resultArea.textContent = '正しい数値を入力してください（燃料は0以上）';
+                return;
+            }
+
+            const efficiency = distance / fuel;
+            resultArea.textContent = `燃費は ${efficiency.toFixed(2)} km/L です。`;
+        }
+    </script>
+</body>
+</html>

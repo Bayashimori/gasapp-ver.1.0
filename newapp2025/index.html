@@ -1,40 +1,142 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>燃料計算アプリ</title>
+  <meta charset="UTF-8">
+  <title>複数車種の燃費比較アプリ</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1 style="text-align: center;">燃料計算アプリ</h1>
+  <h1 style="text-align: center;">複数車種の燃費比較アプリ</h1>
 
-    <div style="text-align: center;">
-        <p>
-            走行距離（km）:<br>
-            <input type="number" id="distance" placeholder="例：500">
-        </p>
-        <p>
-            消費燃料（L）:<br>
-            <input type="number" id="fuel" placeholder="例：25">
-        </p>
-        <button onclick="calculate()" style="padding: 8px 16px;">燃費を計算</button>
-        <p id="result" style="margin-top: 20px; font-size: 18px;"></p>
-    </div>
+  <div style="text-align: center;">
+    <p>
+      車種名：<br>
+      <input type="text" id="carName" placeholder="例：プリウス">
+    </p>
+    <p>
+      走行距離（km）：<br>
+      <input type="number" id="distance" placeholder="例：500">
+    </p>
+    <p>
+      消費燃料（L）：<br>
+      <input type="number" id="fuel" placeholder="例：25">
+    </p>
+    <button onclick="calculate()">燃費を計算</button>
+    <p>
+      <button onclick="removeCar()">🚗 この車種を削除</button>
+      <button onclick="clearAll()">🗑️ 全データをクリア</button>
+    </p>
 
-    <script>
-        function calculate() {
-            const distance = parseFloat(document.getElementById('distance').value);
-            const fuel = parseFloat(document.getElementById('fuel').value);
-            const resultArea = document.getElementById('result');
+    <p id="result" style="font-size: 18px; margin-top: 20px;"></p>
 
-            if (isNaN(distance) || isNaN(fuel) || fuel <= 0) {
-                resultArea.textContent = '正しい数値を入力してください（燃料は0以上）';
-                return;
-            }
+    <h3>グラフ</h3>
+    <canvas id="efficiencyChart" width="400" height="200"></canvas>
+  </div>
 
-            const efficiency = distance / fuel;
-            resultArea.textContent = `燃費は ${efficiency.toFixed(2)} km/L です。`;
+  <script>
+    // 車種ごとのデータ管理
+    const carData = {};
+
+    // Chart.js 初期化
+    const ctx = document.getElementById('efficiencyChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: []
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' }
+        },
+        scales: {
+          y: { beginAtZero: true }
         }
-    </script>
+      }
+    });
+
+    // ランダム色生成
+    function getRandomColor() {
+      const r = Math.floor(Math.random() * 200);
+      const g = Math.floor(Math.random() * 200);
+      const b = Math.floor(Math.random() * 200);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    // 燃費を計算してグラフに追加
+    function calculate() {
+      const carName = document.getElementById('carName').value.trim();
+      const distance = parseFloat(document.getElementById('distance').value);
+      const fuel = parseFloat(document.getElementById('fuel').value);
+      const resultArea = document.getElementById('result');
+
+      if (!carName || isNaN(distance) || isNaN(fuel) || fuel <= 0) {
+        resultArea.textContent = 'すべて正しく入力してください（燃料は0より大きく）';
+        return;
+      }
+
+      const efficiency = distance / fuel;
+      resultArea.textContent = `${carName} の燃費は ${efficiency.toFixed(2)} km/L`;
+
+      // 新しいラベル（計算回数）
+      const label = `計算${chart.data.labels.length + 1}`;
+      if (!chart.data.labels.includes(label)) {
+        chart.data.labels.push(label);
+      }
+
+      // 新規車種ならデータセットを作成
+      if (!carData[carName]) {
+        const color = getRandomColor();
+        carData[carName] = {
+          label: carName,
+          data: [],
+          borderColor: color,
+          backgroundColor: color,
+          tension: 0.2
+        };
+        chart.data.datasets.push(carData[carName]);
+      }
+
+      // データセットの更新（null埋めあり）
+      chart.data.datasets.forEach(ds => {
+        if (ds.label === carName) {
+          ds.data.push(efficiency.toFixed(2));
+        } else {
+          if (ds.data.length < chart.data.labels.length) {
+            ds.data.push(null);
+          }
+        }
+      });
+
+      chart.update();
+    }
+
+    // 指定した車種のデータ削除
+    function removeCar() {
+      const carName = document.getElementById('carName').value.trim();
+      if (!carName || !carData[carName]) {
+        alert('削除する車種名を正しく入力してください。');
+        return;
+      }
+
+      // データセットから削除
+      chart.data.datasets = chart.data.datasets.filter(ds => ds.label !== carName);
+      delete carData[carName];
+      chart.update();
+    }
+
+    // 全履歴クリア
+    function clearAll() {
+      if (!confirm('すべての履歴とグラフを削除します。よろしいですか？')) return;
+
+      chart.data.labels = [];
+      chart.data.datasets = [];
+      for (let key in carData) delete carData[key];
+
+      chart.update();
+      document.getElementById('result').textContent = '';
+    }
+  </script>
 </body>
 </html>
